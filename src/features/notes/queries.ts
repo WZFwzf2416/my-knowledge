@@ -18,7 +18,45 @@ type DashboardFilters = {
   tag?: string;
 };
 
-const fallbackNotes = [
+type NoteTagItem = {
+  tag: {
+    name: string;
+  };
+};
+
+type FallbackNote = {
+  id: string;
+  title: string;
+  summary: string;
+  content: string;
+  visibility: "PRIVATE" | "PUBLIC";
+  noteTags: NoteTagItem[];
+  updatedAt: Date;
+};
+
+export type DashboardData = {
+  notes: Array<
+    | FallbackNote
+    | {
+        id: string;
+        title: string;
+        summary: string | null;
+        content: string;
+        visibility: "PRIVATE" | "PUBLIC";
+        noteTags: Array<{
+          tag: {
+            name: string;
+          };
+        }>;
+        updatedAt: Date;
+      }
+  >;
+  isConnected: boolean;
+  nickname: string;
+  tags: string[];
+};
+
+const fallbackNotes: FallbackNote[] = [
   {
     id: "seed-1",
     title: "欢迎来到你的知识库",
@@ -39,7 +77,7 @@ const fallbackNotes = [
   },
 ];
 
-function filterFallbackNotes(filters: DashboardFilters) {
+function filterFallbackNotes(filters: DashboardFilters): FallbackNote[] {
   const query = filters.query?.trim().toLowerCase();
   const tag = filters.tag?.trim();
 
@@ -50,8 +88,7 @@ function filterFallbackNotes(filters: DashboardFilters) {
       note.summary.toLowerCase().includes(query) ||
       note.content.toLowerCase().includes(query);
 
-    const matchesTag =
-      !tag || note.noteTags.some((item) => item.tag.name === tag);
+    const matchesTag = !tag || note.noteTags.some((item) => item.tag.name === tag);
 
     return matchesQuery && matchesTag;
   });
@@ -60,7 +97,7 @@ function filterFallbackNotes(filters: DashboardFilters) {
 export async function getDashboardData(
   user: AuthUser | null,
   filters: DashboardFilters = {},
-) {
+): Promise<DashboardData> {
   if (!user) {
     const notes = filterFallbackNotes(filters);
 
@@ -111,7 +148,7 @@ export async function getDashboardData(
   const query = filters.query?.trim();
   const tag = filters.tag?.trim();
 
-  const notes = await prisma.note.findMany({
+  const notesResult = await prisma.note.findMany({
     where: {
       userId: user.id,
       ...(query
@@ -138,13 +175,31 @@ export async function getDashboardData(
     include: {
       noteTags: {
         include: {
-          tag: true,
+          tag: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
     orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
     take: 20,
   });
+
+  const notes: DashboardData["notes"] = notesResult.map((note) => ({
+    id: note.id,
+    title: note.title,
+    summary: note.summary,
+    content: note.content,
+    visibility: note.visibility,
+    updatedAt: note.updatedAt,
+    noteTags: note.noteTags.map((item) => ({
+      tag: {
+        name: item.tag.name,
+      },
+    })),
+  }));
 
   const userTags = await prisma.tag.findMany({
     where: { userId: user.id },

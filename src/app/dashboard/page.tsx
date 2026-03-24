@@ -50,7 +50,7 @@ export default async function DashboardPage({
     tag: selectedTag,
   });
 
-  const stats = [
+  const stats: Array<{ label: string; value: string }> = [
     { label: "当前卡片", value: String(notes.length) },
     { label: "全部标签", value: String(tags.length) },
     { label: "当前筛选", value: selectedTag || (query ? "关键词" : "全部") },
@@ -188,7 +188,7 @@ export default async function DashboardPage({
                 <Link href={createFilterHref(undefined, query)} className={`button-secondary rounded-full px-4 py-2 text-sm font-medium ${!selectedTag ? "bg-accent text-white" : "border border-border bg-background text-foreground hover:bg-surface-strong"}`}>
                   全部标签
                 </Link>
-                {tags.map((tag) => (
+                {tags.map((tag: string) => (
                   <Link key={tag} href={createFilterHref(tag, query)} className={`button-secondary rounded-full px-4 py-2 text-sm font-medium ${selectedTag === tag ? "bg-accent text-white" : "border border-border bg-background text-foreground hover:bg-surface-strong"}`}>
                     {tag}
                   </Link>
