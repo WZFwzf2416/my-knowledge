@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NoteVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nickname  String?
+  avatarUrl String?  @map("avatar_url")
+  bio       String?
+  notes     Note[]
+  tags      Tag[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Note {
+  id            String         @id @default(cuid())
+  userId        String         @map("user_id")
+  title         String
+  summary       String?
+  content       String
+  coverImageUrl String?        @map("cover_image_url")
+  visibility    NoteVisibility @default(PRIVATE)
+  isFavorited   Boolean        @default(false) @map("is_favorited")
+  isPinned      Boolean        @default(false) @map("is_pinned")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  noteTags      NoteTag[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("notes")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  color     String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  noteTags  NoteTag[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model NoteTag {
+  id     String @id @default(cuid())
+  noteId String @map("note_id")
+  tagId  String @map("tag_id")
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, tagId])
+  @@index([noteId])
+  @@index([tagId])
+  @@map("note_tags")
+}
