@@ -1,4 +1,4 @@
-﻿import { notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasDatabaseUrl } from "@/lib/env";
 
@@ -182,14 +182,14 @@ export async function getDashboardData(
     take: 20,
   });
 
-  const notes: DashboardData["notes"] = notesResult.map((note) => ({
+  const notes: DashboardData["notes"] = notesResult.map((note: NoteDetail) => ({
     id: note.id,
     title: note.title,
     summary: note.summary,
     content: note.content,
     visibility: note.visibility,
     updatedAt: note.updatedAt,
-    noteTags: note.noteTags.map((item) => ({
+    noteTags: note.noteTags.map((item: NoteTagItem) => ({
       tag: {
         name: item.tag.name,
       },
@@ -250,7 +250,7 @@ export async function getNoteDetail(noteId: string, userId: string): Promise<Not
     content: note.content,
     visibility: note.visibility,
     updatedAt: note.updatedAt,
-    noteTags: note.noteTags.map((item) => ({
+    noteTags: note.noteTags.map((item: NoteTagItem) => ({
       tag: {
         name: item.tag.name,
       },
