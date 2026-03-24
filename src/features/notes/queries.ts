@@ -1,17 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { hasDatabaseUrl } from "@/lib/env";
+import { syncAppUser, type AuthUser } from "@/features/auth/sync-user";
 
-type AuthUser = {
-  id: string;
-  email?: string | null;
-  user_metadata?: {
-    name?: string;
-    full_name?: string;
-    user_name?: string;
-    avatar_url?: string;
-  };
-};
 
 type DashboardFilters = {
   query?: string;
@@ -111,37 +102,14 @@ export async function getDashboardData(
   }
 
   try {
-    const appUser = await prisma.user.upsert({
-      where: { id: user.id },
-      update: {
-        email: user.email ?? "",
-        nickname:
-          user.user_metadata?.name ??
-          user.user_metadata?.full_name ??
-          user.user_metadata?.user_name ??
-          user.email?.split("@")[0] ??
-          null,
-        avatarUrl: user.user_metadata?.avatar_url ?? null,
-      },
-      create: {
-        id: user.id,
-        email: user.email ?? "",
-        nickname:
-          user.user_metadata?.name ??
-          user.user_metadata?.full_name ??
-          user.user_metadata?.user_name ??
-          user.email?.split("@")[0] ??
-          null,
-        avatarUrl: user.user_metadata?.avatar_url ?? null,
-      },
-    });
+    const appUser = await syncAppUser(user);
 
     const query = filters.query?.trim();
     const tag = filters.tag?.trim();
 
     const notesResult = await prisma.note.findMany({
       where: {
-        userId: user.id,
+        userId: appUser.id,
         ...(query
           ? {
               OR: [
@@ -193,7 +161,7 @@ export async function getDashboardData(
     }));
 
     const userTags = await prisma.tag.findMany({
-      where: { userId: user.id },
+      where: { userId: appUser.id },
       orderBy: { name: "asc" },
       select: { name: true },
     });

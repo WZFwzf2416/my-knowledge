@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseActionClient } from "@/lib/supabase/server";
 import { hasDatabaseUrl, hasSupabaseEnv } from "@/lib/env";
+import { syncAppUser } from "@/features/auth/sync-user";
 
 function dashboardMessage(message: string) {
   return `/dashboard?message=${encodeURIComponent(message)}`;
@@ -32,32 +33,9 @@ async function getRequiredUser() {
     redirect("/login?message=" + encodeURIComponent("请先登录后再继续。"));
   }
 
-  await prisma.user.upsert({
-    where: { id: user.id },
-    update: {
-      email: user.email ?? "",
-      nickname:
-        user.user_metadata?.name ??
-        user.user_metadata?.full_name ??
-        user.user_metadata?.user_name ??
-        user.email?.split("@")[0] ??
-        null,
-      avatarUrl: user.user_metadata?.avatar_url ?? null,
-    },
-    create: {
-      id: user.id,
-      email: user.email ?? "",
-      nickname:
-        user.user_metadata?.name ??
-        user.user_metadata?.full_name ??
-        user.user_metadata?.user_name ??
-        user.email?.split("@")[0] ??
-        null,
-      avatarUrl: user.user_metadata?.avatar_url ?? null,
-    },
-  });
+  const appUser = await syncAppUser(user);
 
-  return user;
+  return { authUser: user, appUser };
 }
 
 async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
@@ -92,7 +70,7 @@ async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
 }
 
 export async function createNoteAction(formData: FormData) {
-  const user = await getRequiredUser();
+  const { appUser } = await getRequiredUser();
 
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
@@ -106,7 +84,7 @@ export async function createNoteAction(formData: FormData) {
 
   const note = await prisma!.note.create({
     data: {
-      userId: user.id,
+      userId: appUser.id,
       title,
       summary: summary || null,
       content,
@@ -114,7 +92,7 @@ export async function createNoteAction(formData: FormData) {
     },
   });
 
-  await syncNoteTags(note.id, user.id, rawTags);
+  await syncNoteTags(note.id, appUser.id, rawTags);
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${note.id}`);
@@ -122,7 +100,7 @@ export async function createNoteAction(formData: FormData) {
 }
 
 export async function updateNoteAction(formData: FormData) {
-  const user = await getRequiredUser();
+  const { appUser } = await getRequiredUser();
 
   const noteId = String(formData.get("noteId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
@@ -142,7 +120,7 @@ export async function updateNoteAction(formData: FormData) {
   const existing = await prisma!.note.findFirst({
     where: {
       id: noteId,
-      userId: user.id,
+      userId: appUser.id,
     },
   });
 
@@ -160,7 +138,7 @@ export async function updateNoteAction(formData: FormData) {
     },
   });
 
-  await syncNoteTags(noteId, user.id, rawTags);
+  await syncNoteTags(noteId, appUser.id, rawTags);
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${noteId}`);
@@ -168,7 +146,7 @@ export async function updateNoteAction(formData: FormData) {
 }
 
 export async function deleteNoteAction(formData: FormData) {
-  const user = await getRequiredUser();
+  const { appUser } = await getRequiredUser();
   const noteId = String(formData.get("noteId") ?? "").trim();
 
   if (!noteId) {
@@ -178,7 +156,7 @@ export async function deleteNoteAction(formData: FormData) {
   const existing = await prisma!.note.findFirst({
     where: {
       id: noteId,
-      userId: user.id,
+      userId: appUser.id,
     },
   });
 
