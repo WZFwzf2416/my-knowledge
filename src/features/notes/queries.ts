@@ -18,13 +18,13 @@ type DashboardFilters = {
   tag?: string;
 };
 
-type NoteTagItem = {
+export type NoteTagItem = {
   tag: {
     name: string;
   };
 };
 
-type FallbackNote = {
+export type FallbackNote = {
   id: string;
   title: string;
   summary: string;
@@ -34,23 +34,18 @@ type FallbackNote = {
   updatedAt: Date;
 };
 
+export type NoteDetail = {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  visibility: "PRIVATE" | "PUBLIC";
+  noteTags: NoteTagItem[];
+  updatedAt: Date;
+};
+
 export type DashboardData = {
-  notes: Array<
-    | FallbackNote
-    | {
-        id: string;
-        title: string;
-        summary: string | null;
-        content: string;
-        visibility: "PRIVATE" | "PUBLIC";
-        noteTags: Array<{
-          tag: {
-            name: string;
-          };
-        }>;
-        updatedAt: Date;
-      }
-  >;
+  notes: Array<FallbackNote | NoteDetail>;
   isConnected: boolean;
   nickname: string;
   tags: string[];
@@ -215,7 +210,7 @@ export async function getDashboardData(
   };
 }
 
-export async function getNoteDetail(noteId: string, userId: string) {
+export async function getNoteDetail(noteId: string, userId: string): Promise<NoteDetail> {
   if (!hasDatabaseUrl || !prisma) {
     const fallback = fallbackNotes.find((note) => note.id === noteId);
 
@@ -234,7 +229,11 @@ export async function getNoteDetail(noteId: string, userId: string) {
     include: {
       noteTags: {
         include: {
-          tag: true,
+          tag: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
     },
@@ -244,5 +243,17 @@ export async function getNoteDetail(noteId: string, userId: string) {
     notFound();
   }
 
-  return note;
+  return {
+    id: note.id,
+    title: note.title,
+    summary: note.summary,
+    content: note.content,
+    visibility: note.visibility,
+    updatedAt: note.updatedAt,
+    noteTags: note.noteTags.map((item) => ({
+      tag: {
+        name: item.tag.name,
+      },
+    })),
+  };
 }

@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { deleteNoteAction, updateNoteAction } from "@/features/notes/actions";
-import { getNoteDetail } from "@/features/notes/queries";
+import { getNoteDetail, type NoteTagItem } from "@/features/notes/queries";
 import { hasDatabaseUrl, hasSupabaseEnv } from "@/lib/env";
 import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
 
@@ -36,7 +36,7 @@ export default async function NoteDetailPage({
   }
 
   const note = await getNoteDetail(id, authUser?.id ?? "demo-user");
-  const tagValue = note.noteTags?.map((item) => item.tag.name).join(", ") ?? "";
+  const tagValue = note.noteTags?.map((item: NoteTagItem) => item.tag.name).join(", ") ?? "";
 
   return (
     <main className="min-h-screen bg-background px-6 py-12 sm:px-10 lg:px-12">
