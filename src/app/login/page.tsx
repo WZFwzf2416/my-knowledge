@@ -1,8 +1,8 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
-import { hasSupabaseEnv } from "@/lib/env";
 import { loginAction, signupAction } from "@/features/auth/actions";
+import { getOptionalAuthUser } from "@/features/auth/server";
+import { hasSupabaseEnv } from "@/lib/env";
 
 const steps = [
   "创建 Supabase 项目并开启邮箱登录",
@@ -17,16 +17,10 @@ export default async function LoginPage({
 }) {
   const params = searchParams ? await searchParams : undefined;
   const message = params?.message;
+  const user = await getOptionalAuthUser();
 
-  if (hasSupabaseEnv) {
-    const supabase = await createSupabaseServerComponentClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (user) {
-      redirect("/dashboard");
-    }
+  if (hasSupabaseEnv && user) {
+    redirect("/dashboard");
   }
 
   return (

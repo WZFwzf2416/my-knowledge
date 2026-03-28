@@ -26,7 +26,7 @@ export default function Home() {
             </h1>
 
             <p className="page-enter stagger-2 mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
-              从登录鉴权、数据库建模、搜索与筛选，到真实部署和线上排错，这个项目会把你最需要的一整条全栈主线真正走通。
+              从登录鉴权、数据库建模、搜索与筛选，到真实部署、公开分享和线上排错，这个项目会把你最需要的一整条全栈主线真正走通。
             </p>
 
             <div className="page-enter stagger-3 mt-10 flex flex-col gap-4 sm:flex-row">
@@ -37,10 +37,10 @@ export default function Home() {
                 进入登录页
               </Link>
               <Link
-                href="/docs/product-requirements"
+                href="/public"
                 className="button-secondary inline-flex items-center justify-center rounded-full border border-border bg-surface px-7 py-3.5 text-base font-medium hover:bg-surface-strong"
               >
-                查看需求文档
+                浏览公开内容
               </Link>
             </div>
 
@@ -87,7 +87,7 @@ export default function Home() {
               <div className="mt-8 rounded-3xl bg-[linear-gradient(135deg,_rgba(20,83,45,0.12),_rgba(255,255,255,0.82))] p-5">
                 <p className="text-sm font-medium text-accent">你现在已经完成</p>
                 <p className="mt-2 text-sm leading-6 text-foreground">
-                  登录、用户同步、Note CRUD、详情编辑、搜索和标签筛选。接下来更像是在把它变成一个真正让人愿意继续使用的产品。
+                  登录、用户同步、Note CRUD、图片上传、详情编辑、搜索、标签筛选和公开分享。接下来更像是在继续完善内容分发和管理体验。
                 </p>
               </div>
             </div>

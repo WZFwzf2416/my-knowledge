@@ -5,12 +5,19 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "My Knowledge",
+    default: "知识库",
     template: "%s | My Knowledge",
   },
   description: "一个用于学习全栈开发、真实部署和持续迭代流程的个人知识库项目。",
   applicationName: "My Knowledge",
-  keywords: ["Next.js", "Supabase", "Prisma", "PostgreSQL", "知识库", "全栈学习"],
+  keywords: [
+    "Next.js",
+    "Supabase",
+    "Prisma",
+    "PostgreSQL",
+    "知识库",
+    "全栈学习",
+  ],
 };
 
 export default function RootLayout({

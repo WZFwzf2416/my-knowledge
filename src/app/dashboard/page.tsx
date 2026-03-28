@@ -1,58 +1,42 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
+import { DashboardFilterPanel } from "@/components/dashboard-filter-panel";
+import { NoteCard } from "@/components/note-card";
+import { NoteCoverField } from "@/components/note-cover-field";
+import { PaginationControls } from "@/components/pagination-controls";
 import { logoutAction } from "@/features/auth/actions";
+import { getOptionalAuthUser } from "@/features/auth/server";
 import { createNoteAction } from "@/features/notes/actions";
 import { getDashboardData } from "@/features/notes/queries";
 import { hasSupabaseEnv } from "@/lib/env";
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
-
-function createFilterHref(tag?: string, query?: string) {
-  const params = new URLSearchParams();
-
-  if (query) {
-    params.set("query", query);
-  }
-
-  if (tag) {
-    params.set("tag", tag);
-  }
-
-  const search = params.toString();
-  return search ? `/dashboard?${search}` : "/dashboard";
-}
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ message?: string; query?: string; tag?: string }>;
+  searchParams?: Promise<{ message?: string; query?: string; tag?: string; page?: string; sort?: string }>;
 }) {
-  let authUser = null;
   const params = searchParams ? await searchParams : undefined;
   const message = params?.message;
   const query = params?.query?.trim() ?? "";
   const selectedTag = params?.tag?.trim() ?? "";
+  const page = Number(params?.page ?? "1");
+  const sort = params?.sort?.trim() === "oldest" ? "oldest" : "latest";
+  const authUser = await getOptionalAuthUser();
 
-  if (hasSupabaseEnv) {
-    const supabase = await createSupabaseServerComponentClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect("/login?message=" + encodeURIComponent("请先登录后再访问仪表盘。"));
-    }
-
-    authUser = user;
+  if (hasSupabaseEnv && !authUser) {
+    redirect("/login?message=" + encodeURIComponent("请先登录后再访问仪表盘。"));
   }
 
-  const { notes, isConnected, nickname, tags } = await getDashboardData(authUser, {
+  const { notes, isConnected, nickname, tags, totalCount, totalPages } = await getDashboardData(authUser, {
     query,
     tag: selectedTag,
+    page,
+    sort,
   });
 
   const stats: Array<{ label: string; value: string }> = [
-    { label: "当前卡片", value: String(notes.length) },
-    { label: "全部标签", value: String(tags.length) },
+    { label: "当前卡片", value: String(totalCount) },
+    { label: "当前标签", value: String(tags.length) },
     { label: "当前筛选", value: selectedTag || (query ? "关键词" : "全部") },
   ];
 
@@ -63,9 +47,7 @@ export default async function DashboardPage({
           <div className="border-b border-border/70 bg-[linear-gradient(135deg,_rgba(20,83,45,0.12),_rgba(255,255,255,0.7))] p-8 sm:p-10">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.3em] text-accent">
-                  仪表盘
-                </p>
+                <p className="text-sm font-medium uppercase tracking-[0.3em] text-accent">仪表盘</p>
                 <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">
                   欢迎回来，{nickname}
                 </h1>
@@ -78,7 +60,9 @@ export default async function DashboardPage({
                 <div className="soft-card rounded-3xl px-5 py-4 backdrop-blur-sm">
                   <p className="text-sm font-medium text-muted">连接状态</p>
                   <p className="mt-2 text-sm text-foreground">
-                    {isConnected ? "已接入数据库，可读取真实 Note 列表" : "当前展示演示数据，等待数据库连接"}
+                    {isConnected
+                      ? "已接入数据库，可读取真实 Note 列表"
+                      : "当前展示演示数据，等待数据库连接"}
                   </p>
                 </div>
                 {hasSupabaseEnv ? (
@@ -122,28 +106,60 @@ export default async function DashboardPage({
               <form action={createNoteAction} className="mt-6 space-y-4">
                 <label className="block text-sm text-muted">
                   标题
-                  <input type="text" name="title" placeholder="例如：全栈学习路线" className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent" required />
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="例如：全栈学习路线"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                    required
+                  />
                 </label>
                 <label className="block text-sm text-muted">
                   摘要
-                  <textarea name="summary" rows={3} placeholder="一句话描述这条知识卡片的重点" className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent" />
+                  <textarea
+                    name="summary"
+                    rows={3}
+                    placeholder="一句话描述这条知识卡片的重点"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                  />
                 </label>
+
+                <NoteCoverField initialCoverUrl="" canUpload={hasSupabaseEnv} />
+
                 <label className="block text-sm text-muted">
                   正文
-                  <textarea name="content" rows={6} placeholder="输入正文内容，后面我们还可以继续升级成富文本编辑。" className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent" required />
+                  <textarea
+                    name="content"
+                    rows={6}
+                    placeholder="输入正文内容，后面我们还可以继续升级成富文本编辑。"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                    required
+                  />
                 </label>
                 <label className="block text-sm text-muted">
                   标签
-                  <input type="text" name="tags" placeholder="例如：学习路线, Next.js, Prisma" className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent" />
+                  <input
+                    type="text"
+                    name="tags"
+                    placeholder="例如：学习路线, Next.js, Prisma"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                  />
                 </label>
                 <label className="block text-sm text-muted">
                   可见性
-                  <select name="visibility" defaultValue="PRIVATE" className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent">
+                  <select
+                    name="visibility"
+                    defaultValue="PRIVATE"
+                    className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                  >
                     <option value="PRIVATE">私密</option>
                     <option value="PUBLIC">公开</option>
                   </select>
                 </label>
-                <button type="submit" className="button-primary w-full rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong">
+                <button
+                  type="submit"
+                  className="button-primary w-full rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong"
+                >
                   创建 Note
                 </button>
               </form>
@@ -156,76 +172,42 @@ export default async function DashboardPage({
                 <p>2. 确认 Supabase Auth 的回调域名已包含线上地址。</p>
                 <p>3. 上线前先跑一次 `npm run build`。</p>
               </div>
-              <Link href="/docs/product-requirements" className="button-secondary mt-5 inline-flex rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong">
+              <Link
+                href="/docs/product-requirements"
+                className="button-secondary mt-5 inline-flex rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong"
+              >
                 查看需求文档
               </Link>
             </div>
           </aside>
 
           <section className="page-enter stagger-2">
-            <div className="glass-card rounded-[2rem] p-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground">搜索与筛选</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    支持按标题、摘要、正文搜索，也可以按标签快速筛选。
-                  </p>
-                </div>
-                <Link href="/dashboard" className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong">
-                  清空筛选
-                </Link>
-              </div>
+            <DashboardFilterPanel query={query} selectedTag={selectedTag} tags={tags} sort={sort} />
 
-              <form method="GET" className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <input type="text" name="query" defaultValue={query} placeholder="搜索标题、摘要或正文" className="flex-1 rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-accent" />
-                <input type="hidden" name="tag" value={selectedTag} />
-                <button type="submit" className="button-primary rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong">
-                  搜索
-                </button>
-              </form>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Link href={createFilterHref(undefined, query)} className={`button-secondary rounded-full px-4 py-2 text-sm font-medium ${!selectedTag ? "bg-accent text-white" : "border border-border bg-background text-foreground hover:bg-surface-strong"}`}>
-                  全部标签
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[2rem] border border-border bg-surface/80 px-5 py-4 text-sm text-muted">
+              <p>共 {totalCount} 条内容，本页显示 {notes.length} 条。</p>
+              <div className="flex items-center gap-2">
+                <span>排序：</span>
+                <Link
+                  href={`/dashboard?${new URLSearchParams({ ...(query ? { query } : {}), ...(selectedTag ? { tag: selectedTag } : {}), sort: "latest" }).toString()}`}
+                  className={sort === "latest" ? "font-medium text-accent" : "hover:text-foreground"}
+                >
+                  最新优先
                 </Link>
-                {tags.map((tag: string) => (
-                  <Link key={tag} href={createFilterHref(tag, query)} className={`button-secondary rounded-full px-4 py-2 text-sm font-medium ${selectedTag === tag ? "bg-accent text-white" : "border border-border bg-background text-foreground hover:bg-surface-strong"}`}>
-                    {tag}
-                  </Link>
-                ))}
+                <span>/</span>
+                <Link
+                  href={`/dashboard?${new URLSearchParams({ ...(query ? { query } : {}), ...(selectedTag ? { tag: selectedTag } : {}), sort: "oldest" }).toString()}`}
+                  className={sort === "oldest" ? "font-medium text-accent" : "hover:text-foreground"}
+                >
+                  最早优先
+                </Link>
               </div>
             </div>
 
             <div className="mt-4 space-y-4">
               {notes.length > 0 ? (
                 notes.map((note, index) => (
-                  <article key={note.id} className={`soft-card interactive-card page-enter rounded-[2rem] p-6 stagger-${(index % 4) + 1}`}>
-                    <div className="flex items-center justify-between gap-4">
-                      <h3 className="text-xl font-semibold text-foreground">{note.title}</h3>
-                      <span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
-                        {note.visibility === "PUBLIC" ? "公开" : "私密"}
-                      </span>
-                    </div>
-                    <p className="mt-4 text-sm leading-7 text-muted">
-                      {note.summary || "这条卡片还没有摘要，后面我们可以继续补正文编辑和摘要生成。"}
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {note.noteTags?.length ? note.noteTags.map((item) => (
-                        <span key={item.tag.name} className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted">
-                          {item.tag.name}
-                        </span>
-                      )) : (
-                        <span className="rounded-full border border-dashed border-border bg-background px-3 py-1 text-xs font-medium text-muted">
-                          暂无标签
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-6 flex gap-3">
-                      <Link href={isConnected ? `/notes/${note.id}` : "/dashboard?message=" + encodeURIComponent("请先接入数据库后再查看详情。")} className="button-primary rounded-full bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-strong">
-                        查看详情
-                      </Link>
-                    </div>
-                  </article>
+                  <NoteCard key={note.id} note={note} isConnected={isConnected} index={index} />
                 ))
               ) : (
                 <div className="soft-card page-enter rounded-[2rem] p-8 text-center">
@@ -235,6 +217,15 @@ export default async function DashboardPage({
                   </p>
                 </div>
               )}
+            </div>
+
+            <div className="mt-6">
+              <PaginationControls
+                basePath="/dashboard"
+                page={page}
+                totalPages={totalPages}
+                params={{ query, tag: selectedTag, sort }}
+              />
             </div>
           </section>
         </section>

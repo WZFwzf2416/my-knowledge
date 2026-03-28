@@ -1,10 +1,15 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { syncAppUser } from "@/features/auth/sync-user";
-import { deleteNoteAction, updateNoteAction } from "@/features/notes/actions";
+import { notFound } from "next/navigation";
+import { NoteCoverField } from "@/components/note-cover-field";
+import { requireAppUser } from "@/features/auth/server";
+import {
+  deleteNoteAction,
+  toggleFavoriteAction,
+  togglePinnedAction,
+  updateNoteAction,
+} from "@/features/notes/actions";
 import { getNoteDetail, type NoteTagItem } from "@/features/notes/queries";
-import { hasDatabaseUrl, hasSupabaseEnv } from "@/lib/env";
-import { createSupabaseServerComponentClient } from "@/lib/supabase/server";
+import { env, hasDatabaseUrl, hasSupabaseEnv } from "@/lib/env";
 
 export default async function NoteDetailPage({
   params,
@@ -24,21 +29,13 @@ export default async function NoteDetailPage({
   let appUserId = "demo-user";
 
   if (hasSupabaseEnv) {
-    const supabase = await createSupabaseServerComponentClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect("/login?message=" + encodeURIComponent("请先登录后再查看 Note 详情。"));
-    }
-
-    const appUser = await syncAppUser(user);
+    const { appUser } = await requireAppUser("请先登录后再查看 Note 详情。");
     appUserId = appUser.id;
   }
 
   const note = await getNoteDetail(id, appUserId);
   const tagValue = note.noteTags?.map((item: NoteTagItem) => item.tag.name).join(", ") ?? "";
+  const shareUrl = `${env.appUrl}/share/${note.id}`;
 
   return (
     <main className="min-h-screen bg-background px-6 py-12 sm:px-10 lg:px-12">
@@ -51,7 +48,7 @@ export default async function NoteDetailPage({
                 编辑与管理单条知识卡片
               </h1>
               <p className="mt-4 max-w-3xl text-base leading-8 text-muted sm:text-lg">
-                这一页已经把详情、编辑和删除串起来了。修改后会直接写回数据库，删除后会回到仪表盘。
+                这一页已经把详情、编辑、置顶、收藏、封面图和删除串起来了。修改后会直接写回数据库，删除后会回到仪表盘。
               </p>
             </div>
             <Link
@@ -97,6 +94,11 @@ export default async function NoteDetailPage({
                 className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
               />
             </label>
+
+            <div className="mt-5">
+              <NoteCoverField initialCoverUrl={note.coverImageUrl ?? ""} canUpload={hasSupabaseEnv} />
+            </div>
+
             <label className="mt-5 block text-sm text-muted">
               正文
               <textarea
@@ -151,8 +153,56 @@ export default async function NoteDetailPage({
               <div className="mt-5 space-y-3 text-sm text-muted">
                 <p>可见性：{note.visibility === "PUBLIC" ? "公开" : "私密"}</p>
                 <p>标签数：{note.noteTags?.length ?? 0}</p>
+                <p>收藏状态：{note.isFavorited ? "已收藏" : "未收藏"}</p>
+                <p>置顶状态：{note.isPinned ? "已置顶" : "未置顶"}</p>
+                <p>封面图：{note.coverImageUrl ? "已设置" : "未设置"}</p>
                 <p>最近更新时间：{new Date(note.updatedAt).toLocaleString("zh-CN")}</p>
               </div>
+
+              <div className="mt-5 flex flex-col gap-3">
+                <form action={togglePinnedAction}>
+                  <input type="hidden" name="noteId" value={note.id} />
+                  <input type="hidden" name="returnTo" value={`/notes/${note.id}`} />
+                  <button
+                    type="submit"
+                    className="button-secondary w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-medium hover:bg-surface-strong"
+                  >
+                    {note.isPinned ? "取消置顶" : "设为置顶"}
+                  </button>
+                </form>
+                <form action={toggleFavoriteAction}>
+                  <input type="hidden" name="noteId" value={note.id} />
+                  <input type="hidden" name="returnTo" value={`/notes/${note.id}`} />
+                  <button
+                    type="submit"
+                    className="button-secondary w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-medium hover:bg-surface-strong"
+                  >
+                    {note.isFavorited ? "取消收藏" : "加入收藏"}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div className="soft-card rounded-[2rem] p-6">
+              <h2 className="text-xl font-semibold text-foreground">公开分享</h2>
+              {note.visibility === "PUBLIC" ? (
+                <div className="mt-4 space-y-3 text-sm text-muted">
+                  <p>这条 Note 已公开，你可以通过下面的链接访问分享页。</p>
+                  <p className="break-all rounded-2xl border border-border bg-background px-4 py-3 text-xs leading-6 text-foreground">
+                    {shareUrl}
+                  </p>
+                  <Link
+                    href={`/share/${note.id}`}
+                    className="button-primary inline-flex rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong"
+                  >
+                    打开公开页
+                  </Link>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm leading-6 text-muted">
+                  当前是私密 Note。把可见性切换成“公开”后，这里会生成可分享的公开访问页。
+                </p>
+              )}
             </div>
 
             <form action={deleteNoteAction} className="soft-card rounded-[2rem] border border-red-200 p-6">

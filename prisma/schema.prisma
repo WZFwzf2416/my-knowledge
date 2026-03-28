@@ -35,6 +35,7 @@ model Note {
   visibility    NoteVisibility @default(PRIVATE)
   isFavorited   Boolean        @default(false) @map("is_favorited")
   isPinned      Boolean        @default(false) @map("is_pinned")
+  viewCount     Int            @default(0) @map("view_count")
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteTags      NoteTag[]
   createdAt     DateTime       @default(now()) @map("created_at")

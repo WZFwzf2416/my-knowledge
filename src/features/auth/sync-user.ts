@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 
 export type AuthUser = {
   id: string;
@@ -38,7 +38,11 @@ export async function syncAppUser(user: AuthUser) {
   if (existingById) {
     return prisma.user.update({
       where: { id: existingById.id },
-      data: profile,
+      data: {
+        email: profile.email,
+        nickname: existingById.nickname ?? profile.nickname,
+        avatarUrl: existingById.avatarUrl ?? profile.avatarUrl,
+      },
     });
   }
 
@@ -51,8 +55,9 @@ export async function syncAppUser(user: AuthUser) {
       return prisma.user.update({
         where: { id: existingByEmail.id },
         data: {
-          nickname: profile.nickname,
-          avatarUrl: profile.avatarUrl,
+          email: profile.email,
+          nickname: existingByEmail.nickname ?? profile.nickname,
+          avatarUrl: existingByEmail.avatarUrl ?? profile.avatarUrl,
         },
       });
     }

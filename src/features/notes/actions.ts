@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSupabaseActionClient } from "@/lib/supabase/server";
-import { hasDatabaseUrl, hasSupabaseEnv } from "@/lib/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { env, hasDatabaseUrl, hasSupabaseEnv, hasSupabaseServiceRole } from "@/lib/env";
 import { syncAppUser } from "@/features/auth/sync-user";
 
 function dashboardMessage(message: string) {
@@ -13,6 +14,15 @@ function dashboardMessage(message: string) {
 
 function noteMessage(id: string, message: string) {
   return `/notes/${id}?message=${encodeURIComponent(message)}`;
+}
+
+function resolveReturnTo(formData: FormData, fallbackPath: string) {
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  return returnTo || fallbackPath;
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
 }
 
 async function getRequiredUser() {
@@ -36,6 +46,15 @@ async function getRequiredUser() {
   const appUser = await syncAppUser(user);
 
   return { authUser: user, appUser };
+}
+
+async function getOwnedNote(noteId: string, userId: string) {
+  return prisma!.note.findFirst({
+    where: {
+      id: noteId,
+      userId,
+    },
+  });
 }
 
 async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
@@ -69,14 +88,57 @@ async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
   }
 }
 
+async function resolveCoverImageUrl(formData: FormData, authUserId: string, currentCoverImageUrl = "") {
+  const coverImageUrl = String(formData.get("coverImageUrl") ?? "").trim();
+  const coverImageFile = formData.get("coverImageFile");
+
+  if (!(coverImageFile instanceof File) || coverImageFile.size === 0) {
+    return coverImageUrl || currentCoverImageUrl || null;
+  }
+
+  if (!hasSupabaseEnv || !hasSupabaseServiceRole) {
+    redirect(dashboardMessage("请先配置 Supabase Service Role Key 后再上传封面图。"));
+  }
+
+  if (!coverImageFile.type.startsWith("image/")) {
+    redirect(dashboardMessage("封面图文件必须是图片格式。"));
+  }
+
+  if (coverImageFile.size > 8 * 1024 * 1024) {
+    redirect(dashboardMessage("封面图文件不能超过 8MB。"));
+  }
+
+  const extension = coverImageFile.name.split(".").pop() ?? "png";
+  const baseName = coverImageFile.name || `cover.${extension}`;
+  const path = `${authUserId}/${Date.now()}-${sanitizeFileName(baseName)}`;
+  const supabase = createSupabaseAdminClient();
+
+  const { error: uploadError } = await supabase.storage.from(env.supabaseNoteCoverBucket).upload(path, coverImageFile, {
+    cacheControl: "3600",
+    upsert: true,
+    contentType: coverImageFile.type,
+  });
+
+  if (uploadError) {
+    redirect(dashboardMessage(uploadError.message || "封面图上传失败，请检查 Storage 配置。"));
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(env.supabaseNoteCoverBucket).getPublicUrl(path);
+
+  return publicUrl;
+}
+
 export async function createNoteAction(formData: FormData) {
-  const { appUser } = await getRequiredUser();
+  const { authUser, appUser } = await getRequiredUser();
 
   const title = String(formData.get("title") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const content = String(formData.get("content") ?? "").trim();
   const visibility = String(formData.get("visibility") ?? "PRIVATE").trim();
   const rawTags = String(formData.get("tags") ?? "").trim();
+  const coverImageUrl = await resolveCoverImageUrl(formData, authUser.id);
 
   if (!title || !content) {
     redirect(dashboardMessage("标题和正文不能为空。"));
@@ -88,6 +150,7 @@ export async function createNoteAction(formData: FormData) {
       title,
       summary: summary || null,
       content,
+      coverImageUrl,
       visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
     },
   });
@@ -100,7 +163,7 @@ export async function createNoteAction(formData: FormData) {
 }
 
 export async function updateNoteAction(formData: FormData) {
-  const { appUser } = await getRequiredUser();
+  const { authUser, appUser } = await getRequiredUser();
 
   const noteId = String(formData.get("noteId") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
@@ -117,16 +180,13 @@ export async function updateNoteAction(formData: FormData) {
     redirect(noteMessage(noteId, "标题和正文不能为空。"));
   }
 
-  const existing = await prisma!.note.findFirst({
-    where: {
-      id: noteId,
-      userId: appUser.id,
-    },
-  });
+  const existing = await getOwnedNote(noteId, appUser.id);
 
   if (!existing) {
     redirect(dashboardMessage("这条 Note 不存在，或者你没有权限编辑。"));
   }
+
+  const coverImageUrl = await resolveCoverImageUrl(formData, authUser.id, existing.coverImageUrl ?? "");
 
   await prisma!.note.update({
     where: { id: noteId },
@@ -134,6 +194,7 @@ export async function updateNoteAction(formData: FormData) {
       title,
       summary: summary || null,
       content,
+      coverImageUrl,
       visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
     },
   });
@@ -145,6 +206,60 @@ export async function updateNoteAction(formData: FormData) {
   redirect(noteMessage(noteId, "Note 已更新。"));
 }
 
+export async function toggleFavoriteAction(formData: FormData) {
+  const { appUser } = await getRequiredUser();
+  const noteId = String(formData.get("noteId") ?? "").trim();
+  const returnTo = resolveReturnTo(formData, "/dashboard");
+
+  if (!noteId) {
+    redirect(dashboardMessage("缺少 Note ID。"));
+  }
+
+  const existing = await getOwnedNote(noteId, appUser.id);
+
+  if (!existing) {
+    redirect(dashboardMessage("这条 Note 不存在，或者你没有权限操作。"));
+  }
+
+  await prisma!.note.update({
+    where: { id: noteId },
+    data: {
+      isFavorited: !existing.isFavorited,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/notes/${noteId}`);
+  redirect(returnTo);
+}
+
+export async function togglePinnedAction(formData: FormData) {
+  const { appUser } = await getRequiredUser();
+  const noteId = String(formData.get("noteId") ?? "").trim();
+  const returnTo = resolveReturnTo(formData, "/dashboard");
+
+  if (!noteId) {
+    redirect(dashboardMessage("缺少 Note ID。"));
+  }
+
+  const existing = await getOwnedNote(noteId, appUser.id);
+
+  if (!existing) {
+    redirect(dashboardMessage("这条 Note 不存在，或者你没有权限操作。"));
+  }
+
+  await prisma!.note.update({
+    where: { id: noteId },
+    data: {
+      isPinned: !existing.isPinned,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath(`/notes/${noteId}`);
+  redirect(returnTo);
+}
+
 export async function deleteNoteAction(formData: FormData) {
   const { appUser } = await getRequiredUser();
   const noteId = String(formData.get("noteId") ?? "").trim();
@@ -153,12 +268,7 @@ export async function deleteNoteAction(formData: FormData) {
     redirect(dashboardMessage("缺少 Note ID。"));
   }
 
-  const existing = await prisma!.note.findFirst({
-    where: {
-      id: noteId,
-      userId: appUser.id,
-    },
-  });
+  const existing = await getOwnedNote(noteId, appUser.id);
 
   if (!existing) {
     redirect(dashboardMessage("这条 Note 不存在，或者你没有权限删除。"));
