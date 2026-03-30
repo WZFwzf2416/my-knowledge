@@ -9,19 +9,21 @@ const milestones = [
 
 export default function ProductRequirementsPage() {
   return (
-    <main className="min-h-screen bg-background px-6 py-12 sm:px-10 lg:px-12">
-      <div className="page-enter mx-auto max-w-4xl rounded-[2rem] border border-border/70 bg-surface/90 p-8 shadow-[0_20px_80px_rgba(31,41,55,0.08)] backdrop-blur-sm sm:p-10">
-        <BackButton className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong" />
-        <p className="mt-6 text-sm font-medium uppercase tracking-[0.3em] text-accent">需求概览</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">My Knowledge 最小可用版本</h1>
-        <p className="mt-6 text-base leading-8 text-muted sm:text-lg">
+    <main className="bg-background min-h-screen px-6 py-12 sm:px-10 lg:px-12">
+      <div className="page-enter border-border/70 bg-surface/90 mx-auto max-w-4xl rounded-[2rem] border p-8 shadow-[0_20px_80px_rgba(31,41,55,0.08)] backdrop-blur-sm sm:p-10">
+        <BackButton className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium" />
+        <p className="text-accent mt-6 text-sm font-medium tracking-[0.3em] uppercase">需求概览</p>
+        <h1 className="text-foreground mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
+          My Knowledge 最小可用版本
+        </h1>
+        <p className="text-muted mt-6 text-base leading-8 sm:text-lg">
           这个应用是一个个人知识库和收藏夹系统，目标是通过真实产品场景学习一整套全栈开发、上线和持续迭代流程。
         </p>
 
         <section className="mt-10 grid gap-4 sm:grid-cols-2">
           <div className="soft-card page-enter stagger-1 rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-foreground">核心功能</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
+            <h2 className="text-foreground text-lg font-semibold">核心功能</h2>
+            <ul className="text-muted mt-4 space-y-3 text-sm leading-6">
               <li>用户注册、登录和退出</li>
               <li>支持标题、摘要、正文的知识卡片 CRUD</li>
               <li>支持标签、搜索和公开/私密可见性</li>
@@ -30,8 +32,8 @@ export default function ProductRequirementsPage() {
           </div>
 
           <div className="soft-card page-enter stagger-2 rounded-3xl p-5">
-            <h2 className="text-lg font-semibold text-foreground">技术栈</h2>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
+            <h2 className="text-foreground text-lg font-semibold">技术栈</h2>
+            <ul className="text-muted mt-4 space-y-3 text-sm leading-6">
               <li>Next.js App Router</li>
               <li>Prisma + PostgreSQL</li>
               <li>Supabase Auth 与 Storage</li>
@@ -41,21 +43,25 @@ export default function ProductRequirementsPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-2xl font-semibold text-foreground">里程碑</h2>
+          <h2 className="text-foreground text-2xl font-semibold">里程碑</h2>
           <div className="mt-5 space-y-4">
             {milestones.map((milestone, index) => (
-              <div key={milestone} className={`soft-card page-enter flex items-start gap-3 rounded-2xl px-4 py-4 stagger-${(index % 4) + 1}`}>
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-accent" />
-                <p className="text-sm leading-6 text-foreground">{milestone}</p>
+              <div
+                key={milestone}
+                className={`soft-card page-enter flex items-start gap-3 rounded-2xl px-4 py-4 stagger-${(index % 4) + 1}`}
+              >
+                <span className="bg-accent mt-1 h-2.5 w-2.5 rounded-full" />
+                <p className="text-foreground text-sm leading-6">{milestone}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section className="mt-10 rounded-3xl bg-[linear-gradient(135deg,_rgba(20,83,45,0.09),_rgba(255,255,255,0.6))] p-6">
-          <h2 className="text-xl font-semibold text-foreground">文档位置</h2>
-          <p className="mt-3 text-sm leading-6 text-foreground">
-            更完整的规划也已经存放在仓库里的 `docs/product-requirements.md` 和 `fullstack-learning-plan.md` 中，后续可以继续补设计细节和开发记录。
+          <h2 className="text-foreground text-xl font-semibold">文档位置</h2>
+          <p className="text-foreground mt-3 text-sm leading-6">
+            更完整的规划也已经存放在仓库里的 `docs/product-requirements.md` 和
+            `fullstack-learning-plan.md` 中，后续可以继续补设计细节和开发记录。
           </p>
         </section>
       </div>

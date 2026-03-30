@@ -1,7 +1,7 @@
 ﻿export default function Loading() {
   return (
     <main className="min-h-screen px-6 py-12 sm:px-10 lg:px-12">
-      <div className="mx-auto max-w-6xl space-y-6 page-enter">
+      <div className="page-enter mx-auto max-w-6xl space-y-6">
         <div className="glass-card h-56 rounded-[2rem] p-8">
           <div className="shimmer-surface h-6 w-40 rounded-full" />
           <div className="shimmer-surface mt-5 h-12 w-2/3 rounded-2xl" />
@@ -13,9 +13,9 @@
             <div className="shimmer-surface h-full rounded-[1.5rem]" />
           </div>
           <div className="space-y-4">
-            <div className="soft-card h-40 rounded-[2rem] shimmer-surface" />
-            <div className="soft-card h-40 rounded-[2rem] shimmer-surface" />
-            <div className="soft-card h-40 rounded-[2rem] shimmer-surface" />
+            <div className="soft-card shimmer-surface h-40 rounded-[2rem]" />
+            <div className="soft-card shimmer-surface h-40 rounded-[2rem]" />
+            <div className="soft-card shimmer-surface h-40 rounded-[2rem]" />
           </div>
         </div>
       </div>

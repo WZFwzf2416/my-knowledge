@@ -1,5 +1,6 @@
-﻿"use server";
+"use server";
 
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -57,15 +58,27 @@ async function getOwnedNote(noteId: string, userId: string) {
   });
 }
 
-async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
-  const tagNames = [...new Set(rawTags.split(/[，,]/).map((item) => item.trim()).filter(Boolean))];
+async function syncNoteTags(
+  tx: Prisma.TransactionClient,
+  noteId: string,
+  userId: string,
+  rawTags: string,
+) {
+  const tagNames = [
+    ...new Set(
+      rawTags
+        .split(/[，,]/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  ];
 
-  await prisma!.noteTag.deleteMany({
+  await tx.noteTag.deleteMany({
     where: { noteId },
   });
 
   for (const name of tagNames) {
-    const tag = await prisma!.tag.upsert({
+    const tag = await tx.tag.upsert({
       where: {
         userId_name: {
           userId,
@@ -79,7 +92,7 @@ async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
       },
     });
 
-    await prisma!.noteTag.create({
+    await tx.noteTag.create({
       data: {
         noteId,
         tagId: tag.id,
@@ -88,7 +101,11 @@ async function syncNoteTags(noteId: string, userId: string, rawTags: string) {
   }
 }
 
-async function resolveCoverImageUrl(formData: FormData, authUserId: string, currentCoverImageUrl = "") {
+async function resolveCoverImageUrl(
+  formData: FormData,
+  authUserId: string,
+  currentCoverImageUrl = "",
+) {
   const coverImageUrl = String(formData.get("coverImageUrl") ?? "").trim();
   const coverImageFile = formData.get("coverImageFile");
 
@@ -113,11 +130,13 @@ async function resolveCoverImageUrl(formData: FormData, authUserId: string, curr
   const path = `${authUserId}/${Date.now()}-${sanitizeFileName(baseName)}`;
   const supabase = createSupabaseAdminClient();
 
-  const { error: uploadError } = await supabase.storage.from(env.supabaseNoteCoverBucket).upload(path, coverImageFile, {
-    cacheControl: "3600",
-    upsert: true,
-    contentType: coverImageFile.type,
-  });
+  const { error: uploadError } = await supabase.storage
+    .from(env.supabaseNoteCoverBucket)
+    .upload(path, coverImageFile, {
+      cacheControl: "3600",
+      upsert: true,
+      contentType: coverImageFile.type,
+    });
 
   if (uploadError) {
     redirect(dashboardMessage(uploadError.message || "封面图上传失败，请检查 Storage 配置。"));
@@ -144,21 +163,27 @@ export async function createNoteAction(formData: FormData) {
     redirect(dashboardMessage("标题和正文不能为空。"));
   }
 
-  const note = await prisma!.note.create({
-    data: {
-      userId: appUser.id,
-      title,
-      summary: summary || null,
-      content,
-      coverImageUrl,
-      visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
-    },
-  });
+  const note = await prisma!.$transaction(async (tx) => {
+    const createdNote = await tx.note.create({
+      data: {
+        userId: appUser.id,
+        title,
+        summary: summary || null,
+        content,
+        coverImageUrl,
+        visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
+      },
+    });
 
-  await syncNoteTags(note.id, appUser.id, rawTags);
+    await syncNoteTags(tx, createdNote.id, appUser.id, rawTags);
+
+    return createdNote;
+  });
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${note.id}`);
+  revalidatePath("/public");
+  revalidatePath(`/share/${note.id}`);
   redirect(dashboardMessage("Note 创建成功，已经写入数据库。"));
 }
 
@@ -186,23 +211,31 @@ export async function updateNoteAction(formData: FormData) {
     redirect(dashboardMessage("这条 Note 不存在，或者你没有权限编辑。"));
   }
 
-  const coverImageUrl = await resolveCoverImageUrl(formData, authUser.id, existing.coverImageUrl ?? "");
+  const coverImageUrl = await resolveCoverImageUrl(
+    formData,
+    authUser.id,
+    existing.coverImageUrl ?? "",
+  );
 
-  await prisma!.note.update({
-    where: { id: noteId },
-    data: {
-      title,
-      summary: summary || null,
-      content,
-      coverImageUrl,
-      visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
-    },
+  await prisma!.$transaction(async (tx) => {
+    await tx.note.update({
+      where: { id: noteId },
+      data: {
+        title,
+        summary: summary || null,
+        content,
+        coverImageUrl,
+        visibility: visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
+      },
+    });
+
+    await syncNoteTags(tx, noteId, appUser.id, rawTags);
   });
-
-  await syncNoteTags(noteId, appUser.id, rawTags);
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${noteId}`);
+  revalidatePath("/public");
+  revalidatePath(`/share/${noteId}`);
   redirect(noteMessage(noteId, "Note 已更新。"));
 }
 
@@ -230,6 +263,8 @@ export async function toggleFavoriteAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${noteId}`);
+  revalidatePath("/public");
+  revalidatePath(`/share/${noteId}`);
   redirect(returnTo);
 }
 
@@ -257,6 +292,8 @@ export async function togglePinnedAction(formData: FormData) {
 
   revalidatePath("/dashboard");
   revalidatePath(`/notes/${noteId}`);
+  revalidatePath("/public");
+  revalidatePath(`/share/${noteId}`);
   redirect(returnTo);
 }
 
@@ -279,5 +316,7 @@ export async function deleteNoteAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/public");
+  revalidatePath(`/share/${noteId}`);
   redirect(dashboardMessage("Note 已删除。"));
 }

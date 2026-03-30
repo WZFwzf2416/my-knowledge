@@ -48,10 +48,10 @@ export function AvatarUploadField({
   }, [avatarUrl, previewUrl]);
 
   return (
-    <div className="rounded-[1.75rem] border border-border bg-surface/70 p-5">
+    <div className="border-border bg-surface/70 rounded-[1.75rem] border p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div
-          className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-2xl font-semibold text-white"
+          className="bg-accent flex h-20 w-20 items-center justify-center rounded-full text-2xl font-semibold !text-white"
           style={previewStyle}
           aria-label="头像预览"
         >
@@ -60,7 +60,7 @@ export function AvatarUploadField({
 
         <div className="flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium text-foreground">头像设置</p>
+            <p className="text-foreground text-sm font-medium">头像设置</p>
             {selectedFile ? (
               <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
                 待保存
@@ -68,7 +68,7 @@ export function AvatarUploadField({
             ) : null}
           </div>
 
-          <p className="text-xs leading-5 text-muted">
+          <p className="text-muted text-xs leading-5">
             选择图片后会先在当前页面预览，点击下方“保存个人资料”时才会真正上传并写入数据库。
           </p>
 
@@ -78,10 +78,10 @@ export function AvatarUploadField({
             accept="image/*"
             disabled={!canUpload}
             onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-accent/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent hover:file:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="text-muted file:bg-accent/10 file:text-accent hover:file:bg-accent/20 block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2 file:text-sm file:font-medium disabled:cursor-not-allowed disabled:opacity-60"
           />
 
-          <div className="flex flex-wrap items-center gap-3 text-xs leading-5 text-muted">
+          <div className="text-muted flex flex-wrap items-center gap-3 text-xs leading-5">
             <span>
               {canUpload
                 ? selectedFile
@@ -93,7 +93,7 @@ export function AvatarUploadField({
               <button
                 type="button"
                 onClick={() => setSelectedFile(null)}
-                className="font-medium text-accent hover:text-accent-strong"
+                className="text-accent hover:text-accent-strong font-medium"
               >
                 取消本次选择
               </button>
@@ -102,23 +102,25 @@ export function AvatarUploadField({
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-dashed border-border bg-background/70 p-4">
+      <div className="border-border bg-background/70 mt-5 rounded-2xl border border-dashed p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-foreground">备用方式</p>
-            <p className="mt-1 text-xs leading-5 text-muted">如果你已经有在线图片地址，也可以直接粘贴链接作为头像。</p>
+            <p className="text-foreground text-sm font-medium">备用方式</p>
+            <p className="text-muted mt-1 text-xs leading-5">
+              如果你已经有在线图片地址，也可以直接粘贴链接作为头像。
+            </p>
           </div>
           <button
             type="button"
             onClick={() => setUseManualUrl((value) => !value)}
-            className="text-sm font-medium text-accent hover:text-accent-strong"
+            className="text-accent hover:text-accent-strong text-sm font-medium"
           >
             {useManualUrl ? "收起" : "使用链接"}
           </button>
         </div>
 
         {useManualUrl ? (
-          <label className="mt-4 block text-sm text-muted">
+          <label className="text-muted mt-4 block text-sm">
             头像链接
             <input
               type="url"
@@ -126,7 +128,7 @@ export function AvatarUploadField({
               value={avatarUrl}
               onChange={(event) => setAvatarUrl(event.target.value)}
               placeholder="https://example.com/avatar.png"
-              className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+              className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
             />
           </label>
         ) : (
@@ -136,3 +138,4 @@ export function AvatarUploadField({
     </div>
   );
 }
+

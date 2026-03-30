@@ -44,11 +44,13 @@ export async function updateProfileAction(formData: FormData) {
     const path = `${authUser.id}/${Date.now()}-${sanitizeFileName(baseName)}`;
     const supabase = createSupabaseAdminClient();
 
-    const { error: uploadError } = await supabase.storage.from(env.supabaseStorageBucket).upload(path, avatarFile, {
-      cacheControl: "3600",
-      upsert: true,
-      contentType: avatarFile.type,
-    });
+    const { error: uploadError } = await supabase.storage
+      .from(env.supabaseStorageBucket)
+      .upload(path, avatarFile, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: avatarFile.type,
+      });
 
     if (uploadError) {
       redirect(profileMessage(uploadError.message || "头像上传失败，请检查 Storage 配置。"));

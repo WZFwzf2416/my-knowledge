@@ -7,10 +7,7 @@ type BackButtonProps = {
   className?: string;
 };
 
-export function BackButton({
-  label = "返回上一页",
-  className,
-}: BackButtonProps) {
+export function BackButton({ label = "返回上一页", className }: BackButtonProps) {
   const router = useRouter();
 
   return (

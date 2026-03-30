@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import { NoteCoverField } from "@/components/note-cover-field";
 import { requireAppUser } from "@/features/auth/server";
@@ -38,22 +38,22 @@ export default async function NoteDetailPage({
   const shareUrl = `${env.appUrl}/share/${note.id}`;
 
   return (
-    <main className="min-h-screen bg-background px-6 py-12 sm:px-10 lg:px-12">
+    <main className="bg-background min-h-screen px-6 py-12 sm:px-10 lg:px-12">
       <div className="page-enter mx-auto max-w-5xl">
         <header className="glass-card rounded-[2rem] p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.3em] text-accent">Note 详情</p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground">
+              <p className="text-accent text-sm font-medium uppercase tracking-[0.3em]">Note 详情</p>
+              <h1 className="text-foreground mt-4 text-4xl font-semibold tracking-tight">
                 编辑与管理单条知识卡片
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-8 text-muted sm:text-lg">
+              <p className="text-muted mt-4 max-w-3xl text-base leading-8 sm:text-lg">
                 这一页已经把详情、编辑、置顶、收藏、封面图和删除串起来了。修改后会直接写回数据库，删除后会回到仪表盘。
               </p>
             </div>
             <Link
               href="/dashboard"
-              className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong"
+              className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium"
             >
               返回仪表盘
             </Link>
@@ -61,13 +61,13 @@ export default async function NoteDetailPage({
         </header>
 
         {message ? (
-          <div className="fade-in mt-6 rounded-[2rem] border border-accent/20 bg-accent/10 px-6 py-4 text-sm leading-6 text-foreground">
+          <div className="fade-in border-accent/20 bg-accent/10 text-foreground mt-6 rounded-[2rem] border px-6 py-4 text-sm leading-6">
             {message}
           </div>
         ) : null}
 
         {!hasDatabaseUrl ? (
-          <div className="soft-card mt-6 rounded-[2rem] p-8 text-sm leading-7 text-muted">
+          <div className="soft-card text-muted mt-6 rounded-[2rem] p-8 text-sm leading-7">
             当前数据库未连接，详情页只展示演示数据。连接数据库后，这里会显示真实 Note 内容并支持写回。
           </div>
         ) : null}
@@ -75,23 +75,23 @@ export default async function NoteDetailPage({
         <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_220px]">
           <form action={updateNoteAction} className="glass-card page-enter stagger-1 rounded-[2rem] p-8">
             <input type="hidden" name="noteId" value={note.id} />
-            <label className="block text-sm text-muted">
+            <label className="text-muted block text-sm">
               标题
               <input
                 type="text"
                 name="title"
                 defaultValue={note.title}
-                className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
                 required
               />
             </label>
-            <label className="mt-5 block text-sm text-muted">
+            <label className="text-muted mt-5 block text-sm">
               摘要
               <textarea
                 name="summary"
                 rows={3}
                 defaultValue={note.summary ?? ""}
-                className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
               />
             </label>
 
@@ -99,32 +99,32 @@ export default async function NoteDetailPage({
               <NoteCoverField initialCoverUrl={note.coverImageUrl ?? ""} canUpload={hasSupabaseEnv} />
             </div>
 
-            <label className="mt-5 block text-sm text-muted">
+            <label className="text-muted mt-5 block text-sm">
               正文
               <textarea
                 name="content"
                 rows={10}
                 defaultValue={note.content}
-                className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
                 required
               />
             </label>
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
-              <label className="block text-sm text-muted">
+              <label className="text-muted block text-sm">
                 标签
                 <input
                   type="text"
                   name="tags"
                   defaultValue={tagValue}
-                  className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                  className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
                 />
               </label>
-              <label className="block text-sm text-muted">
+              <label className="text-muted block text-sm">
                 可见性
                 <select
                   name="visibility"
                   defaultValue={note.visibility}
-                  className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
+                  className="border-border bg-background text-foreground focus:border-accent mt-2 w-full rounded-2xl border px-4 py-3 transition-colors outline-none"
                 >
                   <option value="PRIVATE">私密</option>
                   <option value="PUBLIC">公开</option>
@@ -134,13 +134,13 @@ export default async function NoteDetailPage({
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 type="submit"
-                className="button-primary rounded-full bg-accent px-6 py-3 text-sm font-medium text-white hover:bg-accent-strong"
+                className="button-primary bg-accent hover:bg-accent-strong rounded-full px-6 py-3 text-sm font-medium !text-white"
               >
                 保存修改
               </button>
               <Link
                 href="/dashboard"
-                className="button-secondary rounded-full border border-border bg-background px-6 py-3 text-sm font-medium hover:bg-surface-strong"
+                className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-6 py-3 text-sm font-medium"
               >
                 返回列表
               </Link>
@@ -149,8 +149,8 @@ export default async function NoteDetailPage({
 
           <aside className="page-enter stagger-2 space-y-6">
             <div className="soft-card rounded-[2rem] p-6">
-              <h2 className="text-xl font-semibold text-foreground">当前信息</h2>
-              <div className="mt-5 space-y-3 text-sm text-muted">
+              <h2 className="text-foreground text-xl font-semibold">当前信息</h2>
+              <div className="text-muted mt-5 space-y-3 text-sm">
                 <p>可见性：{note.visibility === "PUBLIC" ? "公开" : "私密"}</p>
                 <p>标签数：{note.noteTags?.length ?? 0}</p>
                 <p>收藏状态：{note.isFavorited ? "已收藏" : "未收藏"}</p>
@@ -165,7 +165,7 @@ export default async function NoteDetailPage({
                   <input type="hidden" name="returnTo" value={`/notes/${note.id}`} />
                   <button
                     type="submit"
-                    className="button-secondary w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-medium hover:bg-surface-strong"
+                    className="button-secondary border-border bg-background hover:bg-surface-strong w-full rounded-full border px-5 py-3 text-sm font-medium"
                   >
                     {note.isPinned ? "取消置顶" : "设为置顶"}
                   </button>
@@ -175,7 +175,7 @@ export default async function NoteDetailPage({
                   <input type="hidden" name="returnTo" value={`/notes/${note.id}`} />
                   <button
                     type="submit"
-                    className="button-secondary w-full rounded-full border border-border bg-background px-5 py-3 text-sm font-medium hover:bg-surface-strong"
+                    className="button-secondary border-border bg-background hover:bg-surface-strong w-full rounded-full border px-5 py-3 text-sm font-medium"
                   >
                     {note.isFavorited ? "取消收藏" : "加入收藏"}
                   </button>
@@ -184,22 +184,22 @@ export default async function NoteDetailPage({
             </div>
 
             <div className="soft-card rounded-[2rem] p-6">
-              <h2 className="text-xl font-semibold text-foreground">公开分享</h2>
+              <h2 className="text-foreground text-xl font-semibold">公开分享</h2>
               {note.visibility === "PUBLIC" ? (
-                <div className="mt-4 space-y-3 text-sm text-muted">
+                <div className="text-muted mt-4 space-y-3 text-sm">
                   <p>这条 Note 已公开，你可以通过下面的链接访问分享页。</p>
-                  <p className="break-all rounded-2xl border border-border bg-background px-4 py-3 text-xs leading-6 text-foreground">
+                  <p className="border-border bg-background text-foreground rounded-2xl border px-4 py-3 text-xs leading-6 break-all">
                     {shareUrl}
                   </p>
                   <Link
                     href={`/share/${note.id}`}
-                    className="button-primary inline-flex rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong"
+                    className="button-primary bg-accent hover:bg-accent-strong inline-flex rounded-full px-5 py-3 text-sm font-medium !text-white"
                   >
                     打开公开页
                   </Link>
                 </div>
               ) : (
-                <p className="mt-4 text-sm leading-6 text-muted">
+                <p className="text-muted mt-4 text-sm leading-6">
                   当前是私密 Note。把可见性切换成“公开”后，这里会生成可分享的公开访问页。
                 </p>
               )}
@@ -207,13 +207,13 @@ export default async function NoteDetailPage({
 
             <form action={deleteNoteAction} className="soft-card rounded-[2rem] border border-red-200 p-6">
               <input type="hidden" name="noteId" value={note.id} />
-              <h2 className="text-xl font-semibold text-foreground">危险操作</h2>
-              <p className="mt-3 text-sm leading-6 text-muted">
+              <h2 className="text-foreground text-xl font-semibold">危险操作</h2>
+              <p className="text-muted mt-3 text-sm leading-6">
                 删除后会直接从数据库移除这条 Note，目前还没有回收站功能。
               </p>
               <button
                 type="submit"
-                className="button-danger mt-5 w-full rounded-full bg-red-600 px-5 py-3 text-sm font-medium text-white hover:bg-red-700"
+                className="button-danger mt-5 w-full rounded-full bg-red-600 px-5 py-3 text-sm font-medium !text-white hover:bg-red-700"
               >
                 删除这条 Note
               </button>

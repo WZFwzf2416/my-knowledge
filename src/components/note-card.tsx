@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { toggleFavoriteAction, togglePinnedAction } from "@/features/notes/actions";
 import type { DashboardData } from "@/features/notes/queries";
 
@@ -11,18 +11,13 @@ type NoteCardProps = {
 export function NoteCard({ note, isConnected, index }: NoteCardProps) {
   const detailHref = isConnected
     ? `/notes/${note.id}`
-    : "/dashboard?message=" + encodeURIComponent("请先接入数据库后再查看详情。");
+    : "/dashboard?message=" + encodeURIComponent("请先接入数据库后再查看详情。")
 
   return (
-    <article
-      className={
-        "soft-card interactive-card page-enter overflow-hidden rounded-[2rem] stagger-" +
-        ((index % 4) + 1)
-      }
-    >
+    <article className={`soft-card interactive-card page-enter overflow-hidden rounded-[2rem] stagger-${(index % 4) + 1}`}>
       {note.coverImageUrl ? (
         <div
-          className="h-44 w-full border-b border-border bg-surface"
+          className="border-border bg-surface h-44 w-full border-b"
           style={{
             backgroundImage: `url(${note.coverImageUrl})`,
             backgroundPosition: "center",
@@ -36,9 +31,9 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-xl font-semibold text-foreground">{note.title}</h3>
+              <h3 className="text-foreground text-xl font-semibold">{note.title}</h3>
               {note.isPinned ? (
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+                <span className="bg-accent/10 text-accent rounded-full px-3 py-1 text-xs font-medium">
                   已置顶
                 </span>
               ) : null}
@@ -48,11 +43,11 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
                 </span>
               ) : null}
             </div>
-            <p className="mt-4 text-sm leading-7 text-muted">
+            <p className="text-muted mt-4 text-sm leading-7">
               {note.summary || "这条卡片还没有摘要，后面我们可以继续补正文编辑和摘要生成。"}
             </p>
           </div>
-          <span className="rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent">
+          <span className="bg-accent/10 text-accent rounded-full px-3 py-1 text-sm font-medium">
             {note.visibility === "PUBLIC" ? "公开" : "私密"}
           </span>
         </div>
@@ -62,19 +57,19 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
             note.noteTags.map((item) => (
               <span
                 key={item.tag.name}
-                className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted"
+                className="border-border bg-background text-muted rounded-full border px-3 py-1 text-xs font-medium"
               >
                 {item.tag.name}
               </span>
             ))
           ) : (
-            <span className="rounded-full border border-dashed border-border bg-background px-3 py-1 text-xs font-medium text-muted">
+            <span className="border-border bg-background text-muted rounded-full border border-dashed px-3 py-1 text-xs font-medium">
               暂无标签
             </span>
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-muted">
+        <div className="text-muted mt-5 flex flex-wrap items-center gap-3 text-xs">
           <span>阅读量：{note.viewCount}</span>
           <span>更新于：{new Date(note.updatedAt).toLocaleDateString("zh-CN")}</span>
         </div>
@@ -87,7 +82,7 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
                 <input type="hidden" name="returnTo" value="/dashboard" />
                 <button
                   type="submit"
-                  className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong"
+                  className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium"
                 >
                   {note.isPinned ? "取消置顶" : "设为置顶"}
                 </button>
@@ -97,7 +92,7 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
                 <input type="hidden" name="returnTo" value="/dashboard" />
                 <button
                   type="submit"
-                  className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong"
+                  className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium"
                 >
                   {note.isFavorited ? "取消收藏" : "加入收藏"}
                 </button>
@@ -107,7 +102,7 @@ export function NoteCard({ note, isConnected, index }: NoteCardProps) {
 
           <Link
             href={detailHref}
-            className="button-primary rounded-full bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-strong"
+            className="button-primary bg-accent hover:bg-accent-strong rounded-full px-4 py-2 text-sm font-medium !text-white"
           >
             查看详情
           </Link>

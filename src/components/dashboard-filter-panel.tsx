@@ -36,14 +36,14 @@ export function DashboardFilterPanel({
     <div className="glass-card rounded-[2rem] p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">标签筛选</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
+          <h2 className="text-foreground text-xl font-semibold">标签筛选</h2>
+          <p className="text-muted mt-2 text-sm leading-6">
             支持按标题、摘要、正文搜索，也可以按标签快速筛选。这里只展示当前列表里实际出现的标签。
           </p>
         </div>
         <Link
           href="/dashboard"
-          className="button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong"
+          className="button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium"
         >
           清空筛选
         </Link>
@@ -55,12 +55,12 @@ export function DashboardFilterPanel({
           name="query"
           defaultValue={query}
           placeholder="搜索标题、摘要或正文"
-          className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-accent"
+          className="border-border bg-background text-foreground focus:border-accent rounded-2xl border px-4 py-3 text-sm transition-colors outline-none"
         />
         <select
           name="sort"
           defaultValue={sort}
-          className="rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors focus:border-accent"
+          className="border-border bg-background text-foreground focus:border-accent rounded-2xl border px-4 py-3 text-sm transition-colors outline-none"
         >
           <option value="latest">最新优先</option>
           <option value="oldest">最早优先</option>
@@ -68,7 +68,7 @@ export function DashboardFilterPanel({
         <input type="hidden" name="tag" value={selectedTag} />
         <button
           type="submit"
-          className="button-primary rounded-full bg-accent px-5 py-3 text-sm font-medium text-white hover:bg-accent-strong"
+          className="button-primary bg-accent hover:bg-accent-strong rounded-full px-5 py-3 text-sm font-medium !text-white"
         >
           搜索
         </button>
@@ -80,8 +80,8 @@ export function DashboardFilterPanel({
           className={
             "button-secondary rounded-full px-4 py-2 text-sm font-medium " +
             (!selectedTag
-              ? "bg-accent text-white"
-              : "border border-accent/20 bg-surface text-[#1f2937] hover:border-accent/35 hover:bg-surface-strong hover:text-[#0f172a]")
+              ? "bg-accent !text-white"
+              : "border-accent/20 bg-surface hover:border-accent/35 hover:bg-surface-strong border text-[#1f2937] hover:text-[#0f172a]")
           }
         >
           全部标签
@@ -93,8 +93,8 @@ export function DashboardFilterPanel({
             className={
               "button-secondary rounded-full px-4 py-2 text-sm font-medium " +
               (selectedTag === tag
-                ? "bg-accent text-white"
-                : "border border-accent/20 bg-surface text-[#1f2937] hover:border-accent/35 hover:bg-surface-strong hover:text-[#0f172a]")
+                ? "bg-accent !text-white"
+                : "border-accent/20 bg-surface hover:border-accent/35 hover:bg-surface-strong border text-[#1f2937] hover:text-[#0f172a]")
             }
           >
             {tag}
@@ -104,3 +104,4 @@ export function DashboardFilterPanel({
     </div>
   );
 }
+

@@ -15,27 +15,9 @@ type PublicNotesFilters = {
   page?: number;
 };
 
-export type NoteTagItem = {
-  tag: {
-    name: string;
-  };
-};
+type NormalizedSort = "latest" | "oldest";
 
-export type FallbackNote = {
-  id: string;
-  title: string;
-  summary: string;
-  content: string;
-  coverImageUrl: string | null;
-  visibility: "PRIVATE" | "PUBLIC";
-  isFavorited: boolean;
-  isPinned: boolean;
-  viewCount: number;
-  noteTags: NoteTagItem[];
-  updatedAt: Date;
-};
-
-export type NoteDetail = {
+type BaseNoteShape = {
   id: string;
   title: string;
   summary: string | null;
@@ -48,6 +30,18 @@ export type NoteDetail = {
   noteTags: NoteTagItem[];
   updatedAt: Date;
 };
+
+export type NoteTagItem = {
+  tag: {
+    name: string;
+  };
+};
+
+export type FallbackNote = BaseNoteShape & {
+  summary: string;
+};
+
+export type NoteDetail = BaseNoteShape;
 
 export type PublicNoteDetail = NoteDetail & {
   authorName: string;
@@ -72,7 +66,7 @@ export type DashboardData = {
   totalCount: number;
   totalPages: number;
   page: number;
-  sort: "latest" | "oldest";
+  sort: NormalizedSort;
 };
 
 export type PublicNotesPageData = {
@@ -80,37 +74,11 @@ export type PublicNotesPageData = {
   totalCount: number;
   totalPages: number;
   page: number;
-  sort: "latest" | "oldest";
+  sort: NormalizedSort;
 };
 
 const DASHBOARD_PAGE_SIZE = 8;
 const PUBLIC_PAGE_SIZE = 6;
-
-function collectTagsFromNotes(notes: Array<FallbackNote | NoteDetail>) {
-  return [...new Set(notes.flatMap((note) => note.noteTags.map((item) => item.tag.name)))].sort(
-    (left, right) => left.localeCompare(right, "zh-CN"),
-  );
-}
-
-function normalizePage(page?: number) {
-  if (!page || Number.isNaN(page) || page < 1) {
-    return 1;
-  }
-
-  return Math.floor(page);
-}
-
-function normalizeSort(sort?: string): "latest" | "oldest" {
-  return sort === "oldest" ? "oldest" : "latest";
-}
-
-function createPagination(totalCount: number, pageSize: number, rawPage?: number) {
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const page = Math.min(normalizePage(rawPage), totalPages);
-  const skip = (page - 1) * pageSize;
-
-  return { totalPages, page, skip };
-}
 
 const fallbackNotes: FallbackNote[] = [
   {
@@ -143,6 +111,116 @@ const fallbackNotes: FallbackNote[] = [
   },
 ];
 
+function collectTagsFromNotes(notes: Array<FallbackNote | NoteDetail>) {
+  return [...new Set(notes.flatMap((note) => note.noteTags.map((item) => item.tag.name)))].sort(
+    (left, right) => left.localeCompare(right, "zh-CN"),
+  );
+}
+
+function normalizePage(page?: number) {
+  if (!page || Number.isNaN(page) || page < 1) {
+    return 1;
+  }
+
+  return Math.floor(page);
+}
+
+function normalizeSort(sort?: string): NormalizedSort {
+  return sort === "oldest" ? "oldest" : "latest";
+}
+
+function createPagination(totalCount: number, pageSize: number, rawPage?: number) {
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const page = Math.min(normalizePage(rawPage), totalPages);
+  const skip = (page - 1) * pageSize;
+
+  return { totalPages, page, skip };
+}
+
+function mapTags(noteTags: Array<{ tag: { name: string } }>): NoteTagItem[] {
+  return noteTags.map((item) => ({
+    tag: {
+      name: item.tag.name,
+    },
+  }));
+}
+
+function mapNoteDetail(note: {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  coverImageUrl: string | null;
+  visibility: "PRIVATE" | "PUBLIC";
+  isFavorited: boolean;
+  isPinned: boolean;
+  viewCount: number;
+  updatedAt: Date;
+  noteTags: Array<{ tag: { name: string } }>;
+}): NoteDetail {
+  return {
+    id: note.id,
+    title: note.title,
+    summary: note.summary,
+    content: note.content,
+    coverImageUrl: note.coverImageUrl,
+    visibility: note.visibility,
+    isFavorited: note.isFavorited,
+    isPinned: note.isPinned,
+    viewCount: note.viewCount,
+    updatedAt: note.updatedAt,
+    noteTags: mapTags(note.noteTags),
+  };
+}
+
+function mapPublicNoteSummary(note: {
+  id: string;
+  title: string;
+  summary: string | null;
+  coverImageUrl: string | null;
+  updatedAt: Date;
+  viewCount: number;
+  noteTags: Array<{ tag: { name: string } }>;
+  user?: {
+    nickname: string | null;
+    email: string;
+  };
+}): PublicNoteSummary {
+  return {
+    id: note.id,
+    title: note.title,
+    summary: note.summary,
+    coverImageUrl: note.coverImageUrl,
+    updatedAt: note.updatedAt,
+    authorName: note.user?.nickname ?? note.user?.email?.split("@")[0] ?? "My Knowledge",
+    viewCount: note.viewCount,
+    noteTags: mapTags(note.noteTags),
+  };
+}
+
+function mapPublicNoteDetail(note: {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  coverImageUrl: string | null;
+  visibility: "PRIVATE" | "PUBLIC";
+  isFavorited: boolean;
+  isPinned: boolean;
+  viewCount: number;
+  updatedAt: Date;
+  noteTags: Array<{ tag: { name: string } }>;
+  user?: {
+    nickname: string | null;
+    email: string;
+  };
+}): PublicNoteDetail {
+  return {
+    ...mapNoteDetail(note),
+    authorName: note.user?.nickname ?? note.user?.email?.split("@")[0] ?? "My Knowledge",
+  };
+}
+
 function filterFallbackNotes(filters: DashboardFilters): FallbackNote[] {
   const query = filters.query?.trim().toLowerCase();
   const tag = filters.tag?.trim();
@@ -160,21 +238,24 @@ function filterFallbackNotes(filters: DashboardFilters): FallbackNote[] {
     return matchesQuery && matchesTag;
   });
 
-  return filtered.sort((left, right) => {
-    return sort === "oldest"
+  return filtered.sort((left, right) =>
+    sort === "oldest"
       ? left.updatedAt.getTime() - right.updatedAt.getTime()
-      : right.updatedAt.getTime() - left.updatedAt.getTime();
-  });
+      : right.updatedAt.getTime() - left.updatedAt.getTime(),
+  );
 }
 
 function getFallbackDashboardData(user: AuthUser | null, filters: DashboardFilters): DashboardData {
   const filteredNotes = filterFallbackNotes(filters);
-  const { page, totalPages, skip } = createPagination(filteredNotes.length, DASHBOARD_PAGE_SIZE, filters.page);
-  const notes = filteredNotes.slice(skip, skip + DASHBOARD_PAGE_SIZE);
+  const { page, totalPages, skip } = createPagination(
+    filteredNotes.length,
+    DASHBOARD_PAGE_SIZE,
+    filters.page,
+  );
   const sort = normalizeSort(filters.sort);
 
   return {
-    notes,
+    notes: filteredNotes.slice(skip, skip + DASHBOARD_PAGE_SIZE),
     isConnected: false,
     nickname: user?.user_metadata?.name ?? user?.email?.split("@")[0] ?? "Developer",
     tags: collectTagsFromNotes(filteredNotes),
@@ -183,6 +264,37 @@ function getFallbackDashboardData(user: AuthUser | null, filters: DashboardFilte
     page,
     sort,
   };
+}
+
+function getFallbackPublicNotes(filters: PublicNotesFilters): PublicNotesPageData {
+  const sort = normalizeSort(filters.sort);
+  const notes = fallbackNotes
+    .filter((note) => note.visibility === "PUBLIC")
+    .sort((left, right) =>
+      sort === "oldest"
+        ? left.updatedAt.getTime() - right.updatedAt.getTime()
+        : right.updatedAt.getTime() - left.updatedAt.getTime(),
+    )
+    .map((note) => mapPublicNoteSummary(note));
+  const { totalPages, page, skip } = createPagination(notes.length, PUBLIC_PAGE_SIZE, filters.page);
+
+  return {
+    notes: notes.slice(skip, skip + PUBLIC_PAGE_SIZE),
+    totalCount: notes.length,
+    totalPages,
+    page,
+    sort,
+  };
+}
+
+function getFallbackPublicNoteDetail(noteId: string): PublicNoteDetail {
+  const fallback = fallbackNotes.find((note) => note.id === noteId && note.visibility === "PUBLIC");
+
+  if (!fallback) {
+    notFound();
+  }
+
+  return mapPublicNoteDetail(fallback);
 }
 
 export async function getDashboardData(
@@ -228,7 +340,11 @@ export async function getDashboardData(
     };
 
     const totalCount = await prisma.note.count({ where });
-    const { totalPages, page, skip } = createPagination(totalCount, DASHBOARD_PAGE_SIZE, filters.page);
+    const { totalPages, page, skip } = createPagination(
+      totalCount,
+      DASHBOARD_PAGE_SIZE,
+      filters.page,
+    );
 
     const notesResult = await prisma.note.findMany({
       where,
@@ -248,24 +364,6 @@ export async function getDashboardData(
       take: DASHBOARD_PAGE_SIZE,
     });
 
-    const notes: DashboardData["notes"] = notesResult.map((note) => ({
-      id: note.id,
-      title: note.title,
-      summary: note.summary,
-      content: note.content,
-      coverImageUrl: note.coverImageUrl,
-      visibility: note.visibility,
-      isFavorited: note.isFavorited,
-      isPinned: note.isPinned,
-      viewCount: note.viewCount,
-      updatedAt: note.updatedAt,
-      noteTags: note.noteTags.map((item) => ({
-        tag: {
-          name: item.tag.name,
-        },
-      })),
-    }));
-
     const tagSource = await prisma.note.findMany({
       where,
       include: {
@@ -284,26 +382,10 @@ export async function getDashboardData(
     });
 
     return {
-      notes,
+      notes: notesResult.map((note) => mapNoteDetail(note)),
       isConnected: true,
       nickname: appUser.nickname ?? user.email?.split("@")[0] ?? "Developer",
-      tags: collectTagsFromNotes(
-        tagSource.map((note) => ({
-          id: note.id,
-          title: note.title,
-          summary: note.summary ?? "",
-          content: note.content,
-          coverImageUrl: note.coverImageUrl,
-          visibility: note.visibility,
-          isFavorited: note.isFavorited,
-          isPinned: note.isPinned,
-          viewCount: note.viewCount,
-          updatedAt: note.updatedAt,
-          noteTags: note.noteTags.map((item) => ({
-            tag: { name: item.tag.name },
-          })),
-        })),
-      ),
+      tags: collectTagsFromNotes(tagSource.map((note) => mapNoteDetail(note))),
       totalCount,
       totalPages,
       page,
@@ -348,69 +430,99 @@ export async function getNoteDetail(noteId: string, userId: string): Promise<Not
     notFound();
   }
 
-  return {
-    id: note.id,
-    title: note.title,
-    summary: note.summary,
-    content: note.content,
-    coverImageUrl: note.coverImageUrl,
-    visibility: note.visibility,
-    isFavorited: note.isFavorited,
-    isPinned: note.isPinned,
-    viewCount: note.viewCount,
-    updatedAt: note.updatedAt,
-    noteTags: note.noteTags.map((item) => ({
-      tag: {
-        name: item.tag.name,
-      },
-    })),
-  };
+  return mapNoteDetail(note);
 }
 
 export async function getPublicNoteDetail(noteId: string): Promise<PublicNoteDetail> {
   if (!hasDatabaseUrl || !prisma) {
-    const fallback = fallbackNotes.find((note) => note.id === noteId && note.visibility === "PUBLIC");
-
-    if (!fallback) {
-      notFound();
-    }
-
-    return {
-      ...fallback,
-      authorName: "My Knowledge",
-    };
+    return getFallbackPublicNoteDetail(noteId);
   }
 
   const db = prisma;
 
-  const note = await db.note.update({
-    where: { id: noteId },
-    data: {
-      viewCount: {
-        increment: 1,
-      },
-    },
-    include: {
-      user: {
-        select: {
-          nickname: true,
-          email: true,
+  try {
+    const note = await db.note
+      .update({
+        where: { id: noteId },
+        data: {
+          viewCount: {
+            increment: 1,
+          },
         },
-      },
-      noteTags: {
         include: {
-          tag: {
+          user: {
             select: {
-              name: true,
+              nickname: true,
+              email: true,
+            },
+          },
+          noteTags: {
+            include: {
+              tag: {
+                select: {
+                  name: true,
+                },
+              },
             },
           },
         },
-      },
-    },
-  }).catch(async () => {
-    const existing = await db.note.findFirst({
+      })
+      .catch(async () => {
+        return db.note.findFirst({
+          where: {
+            id: noteId,
+            visibility: "PUBLIC",
+          },
+          include: {
+            user: {
+              select: {
+                nickname: true,
+                email: true,
+              },
+            },
+            noteTags: {
+              include: {
+                tag: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+      });
+
+    if (!note || note.visibility !== "PUBLIC") {
+      notFound();
+    }
+
+    return mapPublicNoteDetail(note);
+  } catch (error) {
+    console.error("Public note detail query failed", error);
+    return getFallbackPublicNoteDetail(noteId);
+  }
+}
+
+export async function getPublicNotes(
+  filters: PublicNotesFilters = {},
+): Promise<PublicNotesPageData> {
+  if (!hasDatabaseUrl || !prisma) {
+    return getFallbackPublicNotes(filters);
+  }
+
+  const sort = normalizeSort(filters.sort);
+
+  try {
+    const totalCount = await prisma.note.count({
       where: {
-        id: noteId,
+        visibility: "PUBLIC",
+      },
+    });
+    const { totalPages, page, skip } = createPagination(totalCount, PUBLIC_PAGE_SIZE, filters.page);
+
+    const notes = await prisma.note.findMany({
+      where: {
         visibility: "PUBLIC",
       },
       include: {
@@ -430,119 +542,20 @@ export async function getPublicNoteDetail(noteId: string): Promise<PublicNoteDet
           },
         },
       },
+      orderBy: [{ isPinned: "desc" }, { updatedAt: sort === "oldest" ? "asc" : "desc" }],
+      skip,
+      take: PUBLIC_PAGE_SIZE,
     });
 
-    return existing;
-  });
-
-  if (!note || note.visibility !== "PUBLIC") {
-    notFound();
-  }
-
-  return {
-    id: note.id,
-    title: note.title,
-    summary: note.summary,
-    content: note.content,
-    coverImageUrl: note.coverImageUrl,
-    visibility: note.visibility,
-    isFavorited: note.isFavorited,
-    isPinned: note.isPinned,
-    viewCount: note.viewCount,
-    updatedAt: note.updatedAt,
-    noteTags: note.noteTags.map((item) => ({
-      tag: {
-        name: item.tag.name,
-      },
-    })),
-    authorName: note.user.nickname ?? note.user.email?.split("@")[0] ?? "My Knowledge",
-  };
-}
-
-export async function getPublicNotes(filters: PublicNotesFilters = {}): Promise<PublicNotesPageData> {
-  const sort = normalizeSort(filters.sort);
-
-  if (!hasDatabaseUrl || !prisma) {
-    const notes = fallbackNotes
-      .filter((note) => note.visibility === "PUBLIC")
-      .sort((left, right) =>
-        sort === "oldest"
-          ? left.updatedAt.getTime() - right.updatedAt.getTime()
-          : right.updatedAt.getTime() - left.updatedAt.getTime(),
-      )
-      .map((note) => ({
-        id: note.id,
-        title: note.title,
-        summary: note.summary,
-        coverImageUrl: note.coverImageUrl,
-        updatedAt: note.updatedAt,
-        authorName: "My Knowledge",
-        viewCount: note.viewCount,
-        noteTags: note.noteTags,
-      }));
-
-    const { totalPages, page, skip } = createPagination(notes.length, PUBLIC_PAGE_SIZE, filters.page);
-
     return {
-      notes: notes.slice(skip, skip + PUBLIC_PAGE_SIZE),
-      totalCount: notes.length,
+      notes: notes.map((note) => mapPublicNoteSummary(note)),
+      totalCount,
       totalPages,
       page,
       sort,
     };
+  } catch (error) {
+    console.error("Public notes query failed", error);
+    return getFallbackPublicNotes(filters);
   }
-
-  const totalCount = await prisma.note.count({
-    where: {
-      visibility: "PUBLIC",
-    },
-  });
-  const { totalPages, page, skip } = createPagination(totalCount, PUBLIC_PAGE_SIZE, filters.page);
-
-  const notes = await prisma.note.findMany({
-    where: {
-      visibility: "PUBLIC",
-    },
-    include: {
-      user: {
-        select: {
-          nickname: true,
-          email: true,
-        },
-      },
-      noteTags: {
-        include: {
-          tag: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: [{ isPinned: "desc" }, { updatedAt: sort === "oldest" ? "asc" : "desc" }],
-    skip,
-    take: PUBLIC_PAGE_SIZE,
-  });
-
-  return {
-    notes: notes.map((note) => ({
-      id: note.id,
-      title: note.title,
-      summary: note.summary,
-      coverImageUrl: note.coverImageUrl,
-      updatedAt: note.updatedAt,
-      authorName: note.user.nickname ?? note.user.email?.split("@")[0] ?? "My Knowledge",
-      viewCount: note.viewCount,
-      noteTags: note.noteTags.map((item) => ({
-        tag: {
-          name: item.tag.name,
-        },
-      })),
-    })),
-    totalCount,
-    totalPages,
-    page,
-    sort,
-  };
 }

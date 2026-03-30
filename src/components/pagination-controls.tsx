@@ -7,7 +7,11 @@ type PaginationControlsProps = {
   params?: Record<string, string | undefined>;
 };
 
-function createPageHref(basePath: string, targetPage: number, params: Record<string, string | undefined>) {
+function createPageHref(
+  basePath: string,
+  targetPage: number,
+  params: Record<string, string | undefined>,
+) {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -38,7 +42,10 @@ export function PaginationControls({
   const nextPage = Math.min(totalPages, page + 1);
   const startPage = Math.max(1, page - 1);
   const endPage = Math.min(totalPages, startPage + 2);
-  const visiblePages = Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage + index);
+  const visiblePages = Array.from(
+    { length: endPage - startPage + 1 },
+    (_, index) => startPage + index,
+  );
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-3">
@@ -46,7 +53,7 @@ export function PaginationControls({
         href={createPageHref(basePath, previousPage, params)}
         aria-disabled={page === 1}
         className={
-          "button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong " +
+          "button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium " +
           (page === 1 ? "pointer-events-none opacity-50" : "")
         }
       >
@@ -61,8 +68,8 @@ export function PaginationControls({
             className={
               "rounded-full px-4 py-2 text-sm font-medium " +
               (item === page
-                ? "bg-accent text-white"
-                : "border border-border bg-background text-foreground hover:bg-surface-strong")
+                ? "bg-accent !text-white"
+                : "border-border bg-background text-foreground hover:bg-surface-strong border")
             }
           >
             {item}
@@ -74,7 +81,7 @@ export function PaginationControls({
         href={createPageHref(basePath, nextPage, params)}
         aria-disabled={page === totalPages}
         className={
-          "button-secondary rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-surface-strong " +
+          "button-secondary border-border bg-background hover:bg-surface-strong rounded-full border px-4 py-2 text-sm font-medium " +
           (page === totalPages ? "pointer-events-none opacity-50" : "")
         }
       >
@@ -83,3 +90,4 @@ export function PaginationControls({
     </div>
   );
 }
+
