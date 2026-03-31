@@ -16,6 +16,7 @@ type PublicNotesFilters = {
 };
 
 type NormalizedSort = "latest" | "oldest";
+type AiRevisionKind = "TITLE" | "SUMMARY" | "CONTENT" | "TAGS";
 
 type BaseNoteShape = {
   id: string;
@@ -29,6 +30,7 @@ type BaseNoteShape = {
   viewCount: number;
   noteTags: NoteTagItem[];
   updatedAt: Date;
+  aiRevisionKinds: AiRevisionKind[];
 };
 
 export type NoteTagItem = {
@@ -94,6 +96,7 @@ const fallbackNotes: FallbackNote[] = [
     viewCount: 12,
     noteTags: [{ tag: { name: "intro" } }],
     updatedAt: new Date(),
+    aiRevisionKinds: [],
   },
   {
     id: "seed-2",
@@ -108,6 +111,7 @@ const fallbackNotes: FallbackNote[] = [
     viewCount: 28,
     noteTags: [{ tag: { name: "roadmap" } }],
     updatedAt: new Date(),
+    aiRevisionKinds: [],
   },
 ];
 
@@ -145,6 +149,10 @@ function mapTags(noteTags: Array<{ tag: { name: string } }>): NoteTagItem[] {
   }));
 }
 
+function mapAiRevisionKinds(aiRevisions?: Array<{ kind: AiRevisionKind }>) {
+  return [...new Set((aiRevisions ?? []).map((item) => item.kind))];
+}
+
 function mapNoteDetail(note: {
   id: string;
   title: string;
@@ -157,6 +165,7 @@ function mapNoteDetail(note: {
   viewCount: number;
   updatedAt: Date;
   noteTags: Array<{ tag: { name: string } }>;
+  aiRevisions?: Array<{ kind: AiRevisionKind }>;
 }): NoteDetail {
   return {
     id: note.id,
@@ -170,6 +179,7 @@ function mapNoteDetail(note: {
     viewCount: note.viewCount,
     updatedAt: note.updatedAt,
     noteTags: mapTags(note.noteTags),
+    aiRevisionKinds: mapAiRevisionKinds(note.aiRevisions),
   };
 }
 
@@ -422,6 +432,15 @@ export async function getNoteDetail(noteId: string, userId: string): Promise<Not
             },
           },
         },
+      },
+      aiRevisions: {
+        select: {
+          kind: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 20,
       },
     },
   });

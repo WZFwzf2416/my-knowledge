@@ -7,6 +7,7 @@ const navItems = [
   { href: "/", label: "首页" },
   { href: "/public", label: "公开内容" },
   { href: "/dashboard", label: "仪表盘" },
+  { href: "/ai", label: "AI 状态" },
   { href: "/login", label: "登录" },
   { href: "/profile", label: "个人资料" },
   { href: "/docs/product-requirements", label: "需求文档" },

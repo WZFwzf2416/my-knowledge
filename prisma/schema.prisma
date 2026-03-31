@@ -11,6 +11,13 @@ enum NoteVisibility {
   PUBLIC
 }
 
+enum NoteAiRevisionKind {
+  TITLE
+  SUMMARY
+  CONTENT
+  TAGS
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -26,20 +33,21 @@ model User {
 }
 
 model Note {
-  id            String         @id @default(cuid())
-  userId        String         @map("user_id")
+  id            String           @id @default(cuid())
+  userId        String           @map("user_id")
   title         String
   summary       String?
   content       String
-  coverImageUrl String?        @map("cover_image_url")
-  visibility    NoteVisibility @default(PRIVATE)
-  isFavorited   Boolean        @default(false) @map("is_favorited")
-  isPinned      Boolean        @default(false) @map("is_pinned")
-  viewCount     Int            @default(0) @map("view_count")
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coverImageUrl String?          @map("cover_image_url")
+  visibility    NoteVisibility   @default(PRIVATE)
+  isFavorited   Boolean          @default(false) @map("is_favorited")
+  isPinned      Boolean          @default(false) @map("is_pinned")
+  viewCount     Int              @default(0) @map("view_count")
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   noteTags      NoteTag[]
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  aiRevisions   NoteAiRevision[]
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
 
   @@index([userId])
   @@map("notes")
@@ -70,4 +78,20 @@ model NoteTag {
   @@index([noteId])
   @@index([tagId])
   @@map("note_tags")
+}
+
+model NoteAiRevision {
+  id              String             @id @default(cuid())
+  noteId          String             @map("note_id")
+  kind            NoteAiRevisionKind
+  previousTitle   String?            @map("previous_title")
+  previousSummary String?            @map("previous_summary")
+  previousContent String?            @map("previous_content")
+  previousTags    String?            @map("previous_tags")
+  note            Note               @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  @@index([noteId])
+  @@index([kind])
+  @@map("note_ai_revisions")
 }
